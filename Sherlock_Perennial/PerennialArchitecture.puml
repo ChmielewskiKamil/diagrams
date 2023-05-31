@@ -1,0 +1,259 @@
+@startuml PerennialArchitecture
+title Perennial V2 Architecture
+
+left to right direction
+
+skinparam linetype ortho 
+
+skinparam note {
+    BorderColor black
+    BackgroundColor white
+    FontColor black
+}
+
+skinparam component {
+    FontSize 25
+    BackgroundColor lightgray
+}
+
+/' Actors '/
+actor Liquidators
+
+together {
+    actor Makers
+    actor Takers
+}
+
+actor "Market Operator" as MarketOperator
+
+together {
+    actor Admin #green
+    actor Pauser #green
+}
+
+actor Keeper
+
+/' //////////////////////////////////////////////////////////////////
+//                           Core Contracts                        //
+////////////////////////////////////////////////////////////////// '/
+
+component Market
+
+component Collateral {
+    hexagon "DSU tokens" as collateral_DSU <<ERC20>> #white
+}
+
+component MultiInvoker 
+
+component ChainlinkOracle 
+
+component ChainlinkFeedOracle
+
+component Incentivizer 
+
+component Controller
+
+component CoordinatorDelegatable 
+
+component PerennialLens
+
+component BalancedVault {
+    hexagon "DSU tokens" as collateral_DSU <<ERC20>> #white
+}
+
+/' //////////////////////////////////////////////////////////////////
+//                       Contract Functions                        //
+////////////////////////////////////////////////////////////////// '/
+
+/'Collateral'/
+rectangle deposit <<depositTo>>
+rectangle withdrawFrom <<withdrawFrom>>
+rectangle withdrawTo <<withdrawTo>>
+rectangle liquidate <<liquidate>>
+rectangle "Settle Account" as collateral_settleAccount <<settleAccount>>
+rectangle "Settle Product" as collateral_settleProduct <<settleProduct>>
+rectangle "Resolve Shortfall" as resolveShortfall <<resolveShortfall>>
+rectangle "Claim Fees" as claimFee <<claimFee>> #yellow
+
+/'Market'/
+rectangle "Open Take Position" as openTake <<openTake>>
+rectangle "Close Take Position" as closeTake <<closeTake>>
+rectangle "Open Make Position" as openMake <<openMake>>
+rectangle "Close Make Position" as closeMake <<closeMake>>
+rectangle "Settle" as market_settle <<settle>>
+rectangle "Settle Account" as market_settleAccount <<settleAccount>>
+rectangle "Close All Positions" as closeAll <<closeAll>>
+rectangle "Close / Open Market" as updateClosed <<updateClosed>>
+rectangle "Update Market Oracle" as updateOracle <<updateOracle>>
+
+/'Controller'/
+rectangle "Create new Product" as createProduct <<createProduct>>
+rectangle "Add new Product Provider" as createCoordinator <<createCoordinator>>
+rectangle "Update the owner of the Product Provider" as updateCoordinator <<updateCoordinatorPendingOwner>>
+rectangle "Update the treasury address of the Product Provider" as updateTreasury <<updateCoordinatorTreasury>>
+rectangle "Updating Core Protocol Parameters" as UPDATE_PROTOCOL_PARAMS #lightblue {
+    rectangle "Update Collateral contract address" as updateCollateral <<updateCollateral>>
+    rectangle "Update Incentivizer contract address" as updateIncentivizer <<updateIncentivizer>>
+    rectangle "Update Product Implementation Beacon" as updateProductBeacon <<updateProductBeacon>>
+    rectangle "Update Multi Invoker address" as updateMultiInvoker <<updateMultiInvoker>>
+    rectangle "Update Protocol - Product fee split" as updateProtocolFee <<updateProtocolFee>>
+    rectangle "Update minimum Funding rate" as updateMinFundingRate <<updateMinFundingRate>>
+    rectangle "Update liquidation fee" as updateLiquidationFee <<updateLiquidationFee>>
+    rectangle "Update incentivization fee" as updateIncentivizationFee <<updateIncentivizationFee>>
+    rectangle "Update minimum user collateral" as updateMinCollateral <<updateMinCollateral>>
+    rectangle "Update max incentivization programs per product" as updateProgramsPerProduct <<updateProgramsPerProduct>>
+    rectangle "Update Pauser address" as updatePauser <<updatePauser>>
+}
+rectangle "Pause / Unpause the protocol" as pause <<updatePaused>>
+
+/'MultiInvoker'/
+rectangle "Call multiple protocol functions" as invoke <<invoke>>
+
+/'Incentivizer'/
+rectangle "Create incentive program" as incentivizer_create <<create>>
+
+/'CoordinatorDelegatable'/
+
+/'PerennialLens'/
+
+/'ChainlinkOracle'/
+rectangle "Check the price & update phase if applicable" as oracleSync <<sync>>
+
+/'BalancedVault'/
+rectangle "Trigger settlement flywheel" as balancedVault_settle <<settle>>
+rectangle "Deposit funds into the vault" as balancedVault_deposit <<deposit>>
+rectangle "Redeem funds from the vault (no transfer)" as balancedVault_redeem <<redeem>>
+rectangle "Claim funds from the vault (transfer)" as balancedVault_claim <<claim>>
+
+/' //////////////////////////////////////////////////////////////////
+//                           Connections                           //
+////////////////////////////////////////////////////////////////// '/
+
+'Collateral contract functions'
+deposit --> Collateral
+withdrawTo --> Collateral
+withdrawFrom --> Collateral
+withdrawTo --> withdrawFrom
+liquidate --> Collateral
+collateral_settleAccount --> Collateral
+collateral_settleProduct --> Collateral
+claimFee --> Collateral
+resolveShortfall --> Collateral
+'Calls to Collateral contract functions'
+Makers --> deposit
+Makers --> withdrawTo
+Makers --> withdrawFrom
+Liquidators --> liquidate
+Market --> collateral_settleAccount 
+Market --> collateral_settleProduct 
+MarketOperator --> resolveShortfall
+
+'Market functions'
+openMake --> Market
+closeMake --> Market
+openTake --> Market
+closeTake --> Market
+market_settle --> Market
+market_settleAccount --> Market
+closeAll --> Market
+updateClosed --> Market
+updateOracle --> Market
+'Calls to Market contract functions'
+Makers --> openMake 
+Makers --> closeMake 
+Takers --> openTake
+Takers --> closeTake
+Collateral --> closeAll
+MarketOperator --> updateClosed
+MarketOperator --> updateOracle
+PerennialLens --> market_settle
+PerennialLens --> market_settleAccount
+
+'Controller functions'
+createProduct --> Controller
+createCoordinator --> Controller
+updateCoordinator --> Controller
+updateTreasury --> Controller
+UPDATE_PROTOCOL_PARAMS --> Controller
+pause --> Controller
+
+'Calls to Controller functions'
+CoordinatorDelegatable --> createCoordinator
+CoordinatorDelegatable --> updateCoordinator
+CoordinatorDelegatable --> updateTreasury
+CoordinatorDelegatable --> createProduct
+Admin --> UPDATE_PROTOCOL_PARAMS
+Pauser --> pause
+
+'MultiInvoker functions'
+invoke --> MultiInvoker
+
+'Incentivizer functions'
+incentivizer_create --> Incentivizer
+
+'Calls to Incentivizer functions'
+MarketOperator --> incentivizer_create
+
+'ChainlinkOracle functions'
+oracleSync --> ChainlinkOracle
+
+'BalanacedVault functions'
+balancedVault_settle --> BalancedVault
+balancedVault_deposit --> BalancedVault
+balancedVault_redeem --> BalancedVault
+balancedVault_claim --> BalancedVault
+
+'Calls to BalancedVault functions'
+Keeper --> balancedVault_settle
+Makers --> balancedVault_deposit
+Makers --> balancedVault_redeem
+Makers --> balancedVault_claim
+
+'Other'
+MarketOperator .-> CoordinatorDelegatable
+Admin .-> Pauser
+ChainlinkOracle .-. ChainlinkFeedOracle
+
+/' //////////////////////////////////////////////////////////////////
+//                             Notes                               //
+////////////////////////////////////////////////////////////////// '/
+
+note bottom of collateral_settleAccount: Moves collateral within the product 
+note top of collateral_settleProduct 
+    Removes collateral
+    from the product as fees
+end note
+note right of MultiInvoker: Allows batch calls
+note right of Market: In V1 known as Product
+note left of Makers: Liquidity Providers
+note left of Takers: Traders
+note bottom of resolveShortfall: Market Operator or Insurer can re-capitalize insolvent market
+note bottom of createCoordinator: This can be called by anyone
+note bottom of market_settle: Global settlement flywheel
+note right of Controller
+    This contract is used to create new markets
+    and control global protocol parameters.
+end note
+note bottom of CoordinatorDelegatable
+    Market Coordinator can either be an EOA (Market Operator) 
+    or a contract (CoordinatorDelegatable).
+end note
+note top of CoordinatorDelegatable: This is a new contract not yet audited.
+note top of ChainlinkFeedOracle
+    ChainlinkFeedOracle is only used when Chainlink Feed Registry is not available.
+end note
+note bottom of claimFee
+    According to Sherlock Audit 08.30 L-10: This is supposed to be called 
+    by the ProtocolTreasury or respective ProductTreasury addressses.
+end note
+note bottom of balancedVault_settle: Keeper triggers the settlement if there were no state changes in a long time
+note top of updateOracle #orange: Is this behind a timelock?
+note top of balancedVault_redeem #orange: Should not claim before redeem 
+note top of incentivizer_create #orange: Only market operator should be able to create incentivization programs
+note top of PerennialLens
+    Most of the functions in this contract trigger the global settlement flywheel.
+    They can be called by anyone.
+end note
+
+footer Perennial Protocol Architecture @b06d5145db62a312dd88dfcafef0f8e2166c5e32 | author: @kamilchmielu
+@enduml
