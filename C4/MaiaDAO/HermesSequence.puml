@@ -1,0 +1,60 @@
+@startuml
+title How does User profit from bHermes?
+
+/' //////////////////////////////////////////////////////////////////
+//                            Actors                               //
+////////////////////////////////////////////////////////////////// '/
+
+actor "User" as User
+
+/' //////////////////////////////////////////////////////////////////
+//                         Core Components                         //
+////////////////////////////////////////////////////////////////// '/
+
+participant "bHermes (Deposit Only ERC4626)" as bHermes
+
+/' //////////////////////////////////////////////////////////////////
+//                         Interactions                            //
+////////////////////////////////////////////////////////////////// '/
+autonumber 1.1.1
+group Burning HERMES for bHermes
+    User -[#red]> bHermes : Deposit (burn) 1000 Hermes tokens
+    bHermes -[#blue]> User : Mint 1000 bHermes tokens
+end
+
+autonumber inc A
+group Claiming utilities with bHermes
+    User -> bHermes : Claim utility tokens for 1000 bHermes
+    bHermes -[#green]> User : 1000 Boost tokens, 1000 Votes tokens, 1000 Weight tokens
+end
+
+/' //////////////////////////////////////////////////////////////////
+//                            Legend                               //
+////////////////////////////////////////////////////////////////// '/
+
+legend
+    == Legend ==
+    <font color=red>Red</font> - HERMES Tokens flow
+    <font color=blue>Blue</font> - bHERMES Tokens flow
+    <font color=green>Green</font> - Utility Tokens flow
+endlegend
+
+/' //////////////////////////////////////////////////////////////////
+//                            Styling                              //
+////////////////////////////////////////////////////////////////// '/
+
+' left to right direction
+skinparam linetype ortho
+skinparam sequenceMessageAlign center
+skinparam note {
+    BorderColor black
+    BackgroundColor white
+    FontColor black
+}
+skinparam participant {
+    FontSize 25
+    BackgroundColor lightgray
+}
+
+footer MaiaDAO Hermes - PlantUML diagram | author: @kamilchmielu
+@enduml
