@@ -51,8 +51,9 @@ group Claiming rewards
     User -> UniswapV3Staker : Unstake Uniswap V3 NFT
     UniswapV3Staker -> NonFungiblePositionManager : Call the collect() with the Bribes contract as Recipient
     NonFungiblePositionManager -[#orange]> MultiRewardsDepot : Transfer ETH/DAI fees
-    UniswapV3Staker -> UniswapV3Staker : Calculate User's rewards (in HERMES?)\nusing //RewardMath// library 
+    UniswapV3Staker -> UniswapV3Staker : Calculate User's rewards (in Hermes?)\nusing //RewardMath// library 
     User -> UniswapV3Staker : Claim all rewards
+    UniswapV3Staker -[#blue]> User : Transfer Hermes token rewards
 end
 
 autonumber inc A
