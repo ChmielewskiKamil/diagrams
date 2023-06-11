@@ -11,14 +11,34 @@ actor "User" as User
 //                         Core Components                         //
 ////////////////////////////////////////////////////////////////// '/
 
-participant "bHermes (Deposit Only ERC4626)" as bHermes
+participant "Uniswap V3" as UniswapV3
+participant "Uniswap V3 Staker" as UniswapV3Staker
 participant "Uniswap V3 Gauge" as UniswapV3Gauge
+participant "Base V2 Minter" as BaseV2Minter
+participant "bHermes (Deposit Only ERC4626)" as bHermes
 
 /' //////////////////////////////////////////////////////////////////
 //                         Interactions                            //
 ////////////////////////////////////////////////////////////////// '/
 'Numbers are in the A.B.C format, by calling `inc A` you will increase the first number by 1'
 autonumber 1.1.1
+group Providing liquidity to Uniswap V3
+    User -> UniswapV3 : Provide liquidity
+    UniswapV3 -[#purple]> User : Uniswap V3 NFT
+end
+
+autonumber stop
+BaseV2Minter -[#blue]> UniswapV3Gauge : Mint HERMES tokens weekly for rewards
+UniswapV3Gauge -[#blue]> UniswapV3Staker : Distribute HERMES as incentive program rewards weekly
+
+autonumber resume
+autonumber inc A
+group Staking NFT in the UniswapV3Staker
+    User -[#purple]> UniswapV3Staker : Stake Uniswap V3 NFT
+    UniswapV3Staker -> UniswapV3Gauge : Attach User to Gauge
+end
+
+autonumber inc A
 group Burning HERMES for bHermes
     User -[#red]> bHermes : Deposit (burn) 1000 Hermes tokens
     bHermes -[#blue]> User : Mint 1000 bHermes tokens
@@ -36,6 +56,7 @@ end
 
 legend
     == Legend ==
+    <font color=purple>Purple</font> - UniV3 NFT flow
     <font color=red>Red</font> - HERMES Tokens flow
     <font color=blue>Blue</font> - bHERMES Tokens flow
     <font color=green>Green</font> - Utility Tokens flow
