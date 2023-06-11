@@ -1,5 +1,5 @@
 @startuml
-title How does User profit from bHermes?
+title Where does the yield come from?
 
 /' //////////////////////////////////////////////////////////////////
 //                            Actors                               //
@@ -12,8 +12,10 @@ actor "User" as User
 ////////////////////////////////////////////////////////////////// '/
 
 participant "Uniswap V3" as UniswapV3
+participant "Non Fungible Position Manager" as NonFungiblePositionManager 
 participant "Uniswap V3 Staker" as UniswapV3Staker
 participant "Uniswap V3 Gauge" as UniswapV3Gauge
+participant "FlywheelGaugeRewards" as FlywheelGaugeRewards
 participant "Base V2 Minter" as BaseV2Minter
 participant "bHermes (Deposit Only ERC4626)" as bHermes
 
@@ -28,8 +30,10 @@ group Providing liquidity to Uniswap V3
 end
 
 autonumber stop
-BaseV2Minter -[#blue]> UniswapV3Gauge : Mint HERMES tokens weekly for rewards
-UniswapV3Gauge -[#blue]> UniswapV3Staker : Distribute HERMES as incentive program rewards weekly
+BaseV2Minter -[#blue]> BaseV2Minter : Mint HERMES once per cycle (1 week)\nfor previous week rewards
+BaseV2Minter -[#blue]> FlywheelGaugeRewards : Transfer //newWeeklyEmission// of HERMES tokens for rewards 
+FlywheelGaugeRewards -[#blue]> UniswapV3Gauge : ???
+UniswapV3Gauge -[#blue]> UniswapV3Staker : Distribute HERMES //accruedRewards// as incentive program rewards\nThis happens whenever //newEpoch()// is called
 
 autonumber resume
 autonumber inc A
@@ -38,10 +42,21 @@ group Staking NFT in the UniswapV3Staker
     UniswapV3Staker -> UniswapV3Gauge : Attach User to Gauge
 end
 
+...
+... ...Some time has to pass to get the rewards... ...
+...
+
+autonumber inc A
+group Claiming rewards
+    User -> UniswapV3Staker : Unstake Uniswap V3 NFT
+    UniswapV3Staker -> NonFungiblePositionManager : Collect the fees to the bribes contract
+    User -> UniswapV3Staker : Claim all rewards
+end
+
 autonumber inc A
 group Burning HERMES for bHermes
-    User -[#red]> bHermes : Deposit (burn) 1000 Hermes tokens
-    bHermes -[#blue]> User : Mint 1000 bHermes tokens
+    User -[#blue]> bHermes : Deposit (burn) 1000 Hermes tokens
+    bHermes -[#red]> User : Mint 1000 bHermes tokens
 end
 
 autonumber inc A
@@ -57,8 +72,8 @@ end
 legend
     == Legend ==
     <font color=purple>Purple</font> - UniV3 NFT flow
-    <font color=red>Red</font> - HERMES Tokens flow
-    <font color=blue>Blue</font> - bHERMES Tokens flow
+    <font color=blue>Blue</font> - HERMES Tokens flow
+    <font color=red>Red</font> - bHERMES Tokens flow
     <font color=green>Green</font> - Utility Tokens flow
 endlegend
 
@@ -79,5 +94,5 @@ skinparam participant {
     BackgroundColor lightgray
 }
 
-footer MaiaDAO Hermes - PlantUML diagram | author: @kamilchmielu
+footer Hermes: Contract Interactions - PlantUML diagram | author: @kamilchmielu
 @enduml
