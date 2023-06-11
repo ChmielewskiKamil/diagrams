@@ -84,8 +84,6 @@ endlegend
 //                            Styling                              //
 ////////////////////////////////////////////////////////////////// '/
 
-' left to right direction
-skinparam linetype ortho
 skinparam sequenceMessageAlign center
 skinparam note {
     BorderColor black
