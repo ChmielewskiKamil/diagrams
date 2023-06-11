@@ -2,22 +2,21 @@
 title Where does the yield come from?
 
 /' //////////////////////////////////////////////////////////////////
-//                            Actors                               //
+//                      System Participants                        //
 ////////////////////////////////////////////////////////////////// '/
+
+participant "bHermes (Deposit Only ERC4626)" as bHermes
+participant "Uniswap V3" as UniswapV3
+participant "Non Fungible Position Manager" as NonFungiblePositionManager 
 
 actor "User" as User
 
-/' //////////////////////////////////////////////////////////////////
-//                         Core Components                         //
-////////////////////////////////////////////////////////////////// '/
-
-participant "Uniswap V3" as UniswapV3
-participant "Non Fungible Position Manager" as NonFungiblePositionManager 
 participant "Uniswap V3 Staker" as UniswapV3Staker
 participant "Uniswap V3 Gauge" as UniswapV3Gauge
+participant "Multi Rewards Depot" as MultiRewardsDepot
+note over MultiRewardsDepot : Depot is created during\nGauge deployment
 participant "FlywheelGaugeRewards" as FlywheelGaugeRewards
 participant "Base V2 Minter" as BaseV2Minter
-participant "bHermes (Deposit Only ERC4626)" as bHermes
 
 /' //////////////////////////////////////////////////////////////////
 //                         Interactions                            //
@@ -25,8 +24,9 @@ participant "bHermes (Deposit Only ERC4626)" as bHermes
 'Numbers are in the A.B.C format, by calling `inc A` you will increase the first number by 1'
 autonumber 1.1.1
 group Providing liquidity to Uniswap V3
-    User -> UniswapV3 : Provide liquidity
-    UniswapV3 -[#purple]> User : Uniswap V3 NFT
+    User -[#orange]> UniswapV3 : Provide liquidity (for ex. ETH/DAI)
+    UniswapV3 -> NonFungiblePositionManager : ???
+    NonFungiblePositionManager -[#purple]> User : Uniswap V3 NFT
 end
 
 autonumber stop
@@ -43,13 +43,15 @@ group Staking NFT in the UniswapV3Staker
 end
 
 ...
-... ...Some time has to pass to get the rewards... ...
+... **Some time has to pass to get the rewards** ...
 ...
 
 autonumber inc A
 group Claiming rewards
     User -> UniswapV3Staker : Unstake Uniswap V3 NFT
-    UniswapV3Staker -> NonFungiblePositionManager : Collect the fees to the bribes contract
+    UniswapV3Staker -> NonFungiblePositionManager : Call the collect() with the Bribes contract as Recipient
+    NonFungiblePositionManager -[#orange]> MultiRewardsDepot : Transfer ETH/DAI fees
+    UniswapV3Staker -> UniswapV3Staker : Calculate User's rewards (in HERMES?)\nusing //RewardMath// library 
     User -> UniswapV3Staker : Claim all rewards
 end
 
@@ -71,6 +73,7 @@ end
 
 legend
     == Legend ==
+    <font color=orange>Orange</font> - Tokens supplied to the UniV3 pool
     <font color=purple>Purple</font> - UniV3 NFT flow
     <font color=blue>Blue</font> - HERMES Tokens flow
     <font color=red>Red</font> - bHERMES Tokens flow
