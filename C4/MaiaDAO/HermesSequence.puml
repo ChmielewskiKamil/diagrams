@@ -12,10 +12,12 @@ actor "User" as User
 ////////////////////////////////////////////////////////////////// '/
 
 participant "bHermes (Deposit Only ERC4626)" as bHermes
+participant "Uniswap V3 Gauge" as UniswapV3Gauge
 
 /' //////////////////////////////////////////////////////////////////
 //                         Interactions                            //
 ////////////////////////////////////////////////////////////////// '/
+'Numbers are in the A.B.C format, by calling `inc A` you will increase the first number by 1'
 autonumber 1.1.1
 group Burning HERMES for bHermes
     User -[#red]> bHermes : Deposit (burn) 1000 Hermes tokens
