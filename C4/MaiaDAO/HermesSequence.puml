@@ -10,11 +10,11 @@ participant "Uniswap V3" as UniswapV3
 participant "Non Fungible Position Manager" as NonFungiblePositionManager 
 
 actor "User" as User
+participant "Multi Rewards Depot" as MultiRewardsDepot
+note over MultiRewardsDepot : Depot is created during\nGauge deployment
 
 participant "Uniswap V3 Staker" as UniswapV3Staker
 participant "Uniswap V3 Gauge" as UniswapV3Gauge
-participant "Multi Rewards Depot" as MultiRewardsDepot
-note over MultiRewardsDepot : Depot is created during\nGauge deployment
 participant "FlywheelGaugeRewards" as FlywheelGaugeRewards
 participant "Base V2 Minter" as BaseV2Minter
 
@@ -29,13 +29,24 @@ group Providing liquidity to Uniswap V3
     NonFungiblePositionManager -[#purple]> User : Uniswap V3 NFT
 end
 
-autonumber stop
-BaseV2Minter -[#blue]> BaseV2Minter : Mint HERMES once per cycle (1 week)\nfor previous week rewards
-BaseV2Minter -[#blue]> FlywheelGaugeRewards : Transfer //newWeeklyEmission// of HERMES tokens for rewards 
-FlywheelGaugeRewards -[#blue]> UniswapV3Gauge : ???
-UniswapV3Gauge -[#blue]> UniswapV3Staker : Distribute HERMES //accruedRewards// as incentive program rewards\nThis happens whenever //newEpoch()// is called
+autonumber inc A
+group Starting a new epoch
+    UniswapV3Gauge -> UniswapV3Gauge : Protocol team calls //newEpoch()// every week
+    UniswapV3Gauge -> FlywheelGaugeRewards : Call //getAccruedRewards()//
+    activate FlywheelGaugeRewards
+    FlywheelGaugeRewards -> BaseV2Minter : Call //updatePeriod()//
+    BaseV2Minter -[#blue]> BaseV2Minter : Mint HERMES once per cycle (1 week)\nfor previous week rewards
+    BaseV2Minter -[#blue]> BaseV2Minter : Transfer //_growth// to Vault\n**WHAT VAULT?** 
+    BaseV2Minter -[#blue]> BaseV2Minter : If DAO is present, transfer //share// to DAO
+    BaseV2Minter -> FlywheelGaugeRewards : Try calling //queueRewardsForCycle()//
+    FlywheelGaugeRewards -> BaseV2Minter : Call //getRewards()// to trigger the transfer
+    BaseV2Minter -[#blue]> FlywheelGaugeRewards : Transfer //newWeeklyEmission// of HERMES tokens for rewards 
+    FlywheelGaugeRewards -> FlywheelGaugeRewards : _queueRewards for the next cycle\nCalculate gauge allocation
+    FlywheelGaugeRewards -[#blue]> UniswapV3Gauge : Transfer //accruedRewards// 
+    deactivate FlywheelGaugeRewards
+    UniswapV3Gauge -[#blue]> UniswapV3Staker : Distribute HERMES //accruedRewards// as incentive program rewards\nThis happens whenever //newEpoch()// is called
+end
 
-autonumber resume
 autonumber inc A
 group Staking NFT in the UniswapV3Staker
     User -[#purple]> UniswapV3Staker : Stake Uniswap V3 NFT
