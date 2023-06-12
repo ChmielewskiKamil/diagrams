@@ -32,19 +32,26 @@ end
 autonumber inc A
 group Starting a new epoch
     UniswapV3Gauge -> UniswapV3Gauge : Protocol team calls //newEpoch()// every week
+    activate UniswapV3Gauge
     UniswapV3Gauge -> FlywheelGaugeRewards : Call //getAccruedRewards()//
     activate FlywheelGaugeRewards
     FlywheelGaugeRewards -> BaseV2Minter : Call //updatePeriod()//
+    activate BaseV2Minter
     BaseV2Minter -[#blue]> BaseV2Minter : Mint HERMES once per cycle (1 week)\nfor previous week rewards
     BaseV2Minter -[#blue]> BaseV2Minter : Transfer //_growth// to Vault\n**WHAT VAULT?** 
     BaseV2Minter -[#blue]> BaseV2Minter : If DAO is present, transfer //share// to DAO
     BaseV2Minter -> FlywheelGaugeRewards : Try calling //queueRewardsForCycle()//
+    activate FlywheelGaugeRewards
     FlywheelGaugeRewards -> BaseV2Minter : Call //getRewards()// to trigger the transfer
     BaseV2Minter -[#blue]> FlywheelGaugeRewards : Transfer //newWeeklyEmission// of HERMES tokens for rewards 
     FlywheelGaugeRewards -> FlywheelGaugeRewards : _queueRewards for the next cycle\nCalculate gauge allocation
+    deactivate BaseV2Minter
+    deactivate FlywheelGaugeRewards
     FlywheelGaugeRewards -[#blue]> UniswapV3Gauge : Transfer //accruedRewards// 
     deactivate FlywheelGaugeRewards
-    UniswapV3Gauge -[#blue]> UniswapV3Staker : Distribute HERMES //accruedRewards// as incentive program rewards\nThis happens whenever //newEpoch()// is called
+    UniswapV3Gauge -> UniswapV3Gauge : Call //distribute(accruedRewards)//
+    UniswapV3Gauge -[#blue]> UniswapV3Staker : Call //creativeIncentiveFromGauge()//
+    deactivate UniswapV3Gauge
 end
 
 autonumber inc A
