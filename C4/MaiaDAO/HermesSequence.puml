@@ -28,7 +28,7 @@ participant "Base V2 Minter" as BaseV2Minter
 'Numbers are in the A.B.C format, by calling `inc A` you will increase the first number by 1'
 autonumber 1.1.1
 group HERMES tokens distribution in the protocol
-    UniswapV3Gauge -> UniswapV3Gauge : Protocol team calls //newEpoch()// every week
+    UniswapV3Gauge -> UniswapV3Gauge : Protocol team calls //newEpoch()// every week\nOn the BaseV2GaugeManager
     activate UniswapV3Gauge
     UniswapV3Gauge -> FlywheelGaugeRewards : Call //getAccruedRewards()//
     activate FlywheelGaugeRewards
@@ -72,7 +72,7 @@ end
 ...
 
 autonumber inc A
-group Claiming rewards
+group Claiming HERMES rewards (Liquidity Providers)
     User -> UniswapV3Staker : Unstake Uniswap V3 NFT
     UniswapV3Staker -> NonFungiblePositionManager : Call the collect() with the Bribes contract as Recipient
     NonFungiblePositionManager -[#orange]> MultiRewardsDepot : Transfer ETH/DAI fees
@@ -86,6 +86,7 @@ group Bribe rewards
     User -> bHermesGauges : Call: //incrementGauge(gauge, weight)//
     bHermesGauges -> UniswapV3Gauge : Call //accrueBribes()//
     UniswapV3Gauge -> FlywheelCore : Call //accrue(gauge, user)//
+    FlywheelCore -> FlywheelCore : Call //_getAccruedRewards()//
     FlywheelCore -> FlywheelBribeRewards : Call //getAccruedRewards()//
     FlywheelBribeRewards -> FlywheelBribeRewards : Hook: //getNextCycleRewards//
     FlywheelBribeRewards -> MultiRewardsDepot : Trigger reward transfer: //getRewards()//
