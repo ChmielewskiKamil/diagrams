@@ -1,0 +1,136 @@
+@startuml
+title ERC20Gauges state machine
+
+/' //////////////////////////////////////////////////////////////////
+//                          Contracts                              //
+////////////////////////////////////////////////////////////////// '/
+class ERC20Gauges << (S, gold) >> <<abstract>> {
+    --public--
+    uint32 : gaugeCycleLength
+    uint32 : incrementFreezeWindow
+    mapping : getUserGaugeWeight
+    mapping : getUserWeight
+    mapping : canContractExceedMaxGauges
+    ..internal..
+    mapping : _getGaugeWeight
+    Weight : _totalWeight
+    mapping : _userGauges
+    EnumerableSet.AddressSet : _gauges
+    EnumerableSet.AddressSet : _deprecatedGauges
+}
+
+/' //////////////////////////////////////////////////////////////////
+//                    Public & External functions                  //
+////////////////////////////////////////////////////////////////// '/
+class ERC20Gauges::incrementGauges <<E, orange>> <<external>> {
+    -- params --
+    address[] calldata : gaugeList
+    uint112[] calldata : weights
+    -- reads --
+    uint32 : currentCycle
+
+    -- writes --
+}
+
+class BaseV2Gauge::accrueBribes <<E, orange>> <<external>> {
+    --params--
+    address : user
+}
+/' //////////////////////////////////////////////////////////////////
+//                  Internal & Private functions                   //
+////////////////////////////////////////////////////////////////// '/
+class ERC20Gauges::_incrementGaugeWeight << (I, lightgray) >> <<internal>> {
+    -- params --
+    address : user 
+    address : gauge 
+    uint112 : weight 
+    uint32 : cycle
+    -- reads --
+    ERC20Gauges#_getGaugeWeight(gauge)
+}
+
+class ERC20Gauges::_getGaugeCycleEnd << (I, lightgray) >> <<internal>> {
+    -- reads --
+    ERC20Gauges#gaugeCycleLength
+}
+
+class ERC20Gauges::_writeGaugeWeight << P, white >> <<private>> {
+    -- params --
+    Weight storage weight
+    function(uint112, uint112) view returns (uint112) op
+    uint112 delta
+    uint32 cycle
+}
+/' //////////////////////////////////////////////////////////////////
+//                         Interactions                            //
+////////////////////////////////////////////////////////////////// '/
+
+'External'
+
+'ERC20Gauges#incrementGauges'
+ERC20Gauges::_getGaugeCycleEnd --> ERC20Gauges::incrementGauges::currentCycle #blue
+
+'Internal'
+
+'ERC20Gauges#_incrementGaugeWeight'
+ERC20Gauges::incrementGauges --> ERC20Gauges::_incrementGaugeWeight::user : msg.sender
+ERC20Gauges::incrementGauges::gaugeList --> ERC20Gauges::_incrementGaugeWeight::gauge : gaugeList[i]
+ERC20Gauges::incrementGauges::weights --> ERC20Gauges::_incrementGaugeWeight::weight : weight[i]
+
+ERC20Gauges::incrementGauges::currentCycle --> ERC20Gauges::_incrementGaugeWeight::cycle #blue
+ERC20Gauges::_gauges --> ERC20Gauges::_incrementGaugeWeight #blue
+ERC20Gauges::_deprecatedGauges --> ERC20Gauges::_incrementGaugeWeight #blue
+ERC20Gauges::incrementFreezeWindow --> ERC20Gauges::_incrementGaugeWeight #blue
+
+ERC20Gauges::_incrementGaugeWeight::user --> BaseV2Gauge::accrueBribes::user #blue
+ERC20Gauges::_incrementGaugeWeight::gauge --> BaseV2Gauge::accrueBribes : IBaseV2Gauge(gauge).accrueBribes(user)
+
+ERC20Gauges::_incrementGaugeWeight --> ERC20Gauges::canContractExceedMaxGauges #blue
+
+ERC20Gauges::_userGauges --> ERC20Gauges::_incrementGaugeWeight #blue
+ERC20Gauges::_incrementGaugeWeight::gauge --> ERC20Gauges::_userGauges #red
+
+ERC20Gauges::_incrementGaugeWeight::weight --> ERC20Gauges::getUserGaugeWeight #red
+
+ERC20Gauges::_getGaugeWeight --> ERC20Gauges::_incrementGaugeWeight::_getGaugeWeight #blue
+
+'ERC20Gauges::_getGaugeCycleEnd'
+ERC20Gauges::gaugeCycleLength --> ERC20Gauges::_getGaugeCycleEnd #blue
+
+'ERC20Gauges::_writeGaugeWeight'
+ERC20Gauges::_incrementGaugeWeight::_getGaugeWeight --> ERC20Gauges::_writeGaugeWeight::weight #blue
+/' //////////////////////////////////////////////////////////////////
+//                            Notes                                //
+////////////////////////////////////////////////////////////////// '/
+note right of ERC20Gauges::"mapping : getUserGaugeWeight"
+    mapping(address => mapping(address => uint112))
+    User -> Gauge -> Weight 
+end note
+
+/' //////////////////////////////////////////////////////////////////
+//                            Legend                               //
+////////////////////////////////////////////////////////////////// '/
+
+legend
+    == Legend ==
+    <font color=orange>Orange</font> - Tokens supplied to the UniV3 pool
+    <font color=purple>Purple</font> - UniV3 NFT flow
+    <font color=blue>Blue</font> - HERMES Tokens flow
+    <font color=red>Red</font> - bHERMES Tokens flow
+    <font color=green>Green</font> - Utility Tokens flow
+endlegend
+
+/' //////////////////////////////////////////////////////////////////
+//                            Styling                              //
+////////////////////////////////////////////////////////////////// '/
+skinparam nodesep 70
+skinparam ranksep 80
+allow_mixing
+skinparam note {
+    BorderColor black
+    BackgroundColor white
+    FontColor black
+}
+
+footer Hermes: Contract Interactions - PlantUML diagram | author: @kamilchmielu
+@enduml
