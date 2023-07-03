@@ -9,7 +9,7 @@ participant "bHermes (Deposit Only ERC4626)" as bHermes
 participant "Uniswap V3" as UniswapV3
 participant "Non Fungible Position Manager" as NonFungiblePositionManager 
 
-actor "User" as User
+actor "Alice (User)" as User
 participant "Multi Rewards Depot" as MultiRewardsDepot
 note over MultiRewardsDepot : Depot is created during\nGauge deployment
 
@@ -35,7 +35,7 @@ group HERMES tokens distribution in the protocol
     FlywheelGaugeRewards -> BaseV2Minter : Call //updatePeriod()//
     activate BaseV2Minter
     BaseV2Minter -[#blue]> BaseV2Minter : Mint HERMES once per cycle (1 week)\nfor previous week rewards
-    BaseV2Minter -[#blue]> BaseV2Minter : Transfer //_growth// to Vault\n**WHAT VAULT?** 
+    BaseV2Minter -[#blue]> BaseV2Minter : Transfer //_growth// to Vault** 
     BaseV2Minter -[#blue]> BaseV2Minter : If DAO is present, transfer //share// to DAO
     BaseV2Minter -> FlywheelGaugeRewards : Try calling //queueRewardsForCycle()//
     activate FlywheelGaugeRewards
@@ -53,9 +53,9 @@ end
 
 autonumber inc A
 group Providing liquidity to Uniswap V3
-    User -[#orange]> UniswapV3 : Provide liquidity (for ex. ETH/DAI)
-    UniswapV3 -> NonFungiblePositionManager : **How does the uniswap part works?** 
-    NonFungiblePositionManager -[#purple]> User : Uniswap V3 NFT
+    User -[#orange]> NonFungiblePositionManager : Provide liquidity (for ex. ETH/DAI) via //mint()//
+    NonFungiblePositionManager -[#orange]> UniswapV3 : Add liquidity to Uniswap V3 Pool
+    NonFungiblePositionManager -[#purple]> User : Mint Uniswap V3 NFT
 end
 
 autonumber inc A
