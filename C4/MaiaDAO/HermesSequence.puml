@@ -90,7 +90,7 @@ group Bribe rewards
     FlywheelCore -> FlywheelBribeRewards : Call //getAccruedRewards()//
     FlywheelBribeRewards -> FlywheelBribeRewards : Hook: //getNextCycleRewards//
     FlywheelBribeRewards -> MultiRewardsDepot : Trigger reward transfer: //getRewards()//
-    MultiRewardsDepot -[#orange]> FlywheelBribeRewards : Transfer rewards **(ETH/DAI???)** for distribution
+    MultiRewardsDepot -[#orange]> FlywheelBribeRewards : Transfer rewards **(ETH/DAI)** for distribution
 
 end
 
