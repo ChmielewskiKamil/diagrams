@@ -1,0 +1,72 @@
+@startuml
+title Bond Options: Token flows in the protocol
+
+/' //////////////////////////////////////////////////////////////////
+//                      System Participants                        //
+////////////////////////////////////////////////////////////////// '/
+
+actor "Bond Labs (Admin)" as Admin
+participant "OTLM Factory" as OTLMFactory
+actor "External Team (Issuer)" as Issuer
+participant "Fixed Strike Option Teller" as FixedStrikeOptionTeller
+participant "Oracle Strike OTLM" as OracleStrikeOTLM
+participant "Manual Strike OTLM" as ManualStrikeOTLM
+participant "Fixed Strike Option Token" as FixedStrikeOptionToken
+
+actor "Alice (User)" as User
+
+/' //////////////////////////////////////////////////////////////////
+//                         Interactions                            //
+////////////////////////////////////////////////////////////////// '/
+'Numbers are in the A.B.C format, by calling `inc A` you will increase the first number by 1'
+autonumber 1.1
+group Bond Options - Protocol Deployment
+    Admin -> FixedStrikeOptionTeller: Deploy FixedStrikeOptionTeller
+    FixedStrikeOptionTeller -> FixedStrikeOptionTeller: Set //guardian// and //authority//
+    FixedStrikeOptionTeller -> FixedStrikeOptionToken: Deploy Option Token implementation for clones
+    |||
+    autonumber inc A
+    Admin -> OTLMFactory: Deploy OTLMFactory
+end
+
+autonumber inc A
+group Option Token Liquidity Mining
+    note over Issuer, OTLMFactory: Args: stakedToken, payoutToken, style
+    Issuer -> OTLMFactory: Call //_deploy// to deploy OTLM
+    alt #whitesmoke Oracle Strike
+        OTLMFactory -> OracleStrikeOTLM: Deploy OracleStrikeOTLM
+    else Manual Strike
+        OTLMFactory -> ManualStrikeOTLM: Deploy ManualStrikeOTLM
+    end
+end
+
+/' //////////////////////////////////////////////////////////////////
+//                            Legend                               //
+////////////////////////////////////////////////////////////////// '/
+
+legend
+    == Legend ==
+    <font color=orange>Orange</font> - 
+    <font color=purple>Purple</font> - 
+    <font color=blue>Blue</font> - 
+    <font color=red>Red</font> - 
+    <font color=green>Green</font> - 
+endlegend
+
+/' //////////////////////////////////////////////////////////////////
+//                            Styling                              //
+////////////////////////////////////////////////////////////////// '/
+
+skinparam sequenceMessageAlign center
+skinparam note {
+    BorderColor black
+    BackgroundColor white
+    FontColor black
+}
+skinparam participant {
+    FontSize 25
+    BackgroundColor lightgray
+}
+
+footer Bond Options - Sherlock (Jul 2023) - PlantUML diagram | author: @kamilchmielu
+@enduml
