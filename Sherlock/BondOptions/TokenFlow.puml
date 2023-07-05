@@ -72,20 +72,15 @@ group Manual Strike - Option Token Liquidity Mining
     end note
 
     ManualStrikeOTLM -> FixedStrikeOptionTeller ++ : //deploy()// new Option Token
-    FixedStrikeOptionTeller -> FixedStrikeOptionTeller: //_getPriceDecimals()//
-    activate FixedStrikeOptionTeller
-    FixedStrikeOptionTeller -> FixedStrikeOptionTeller: External call to //quoteToken.decimals()//
-    deactivate FixedStrikeOptionTeller
+    FixedStrikeOptionTeller -> FixedStrikeOptionTeller ++ : //_getPriceDecimals()//
+    FixedStrikeOptionTeller -> FixedStrikeOptionTeller -- : External call to //quoteToken.decimals()//
     FixedStrikeOptionTeller -> FixedStrikeOptionTeller: Create option token HASH if one does not exist yet\nInternal Call//_getOptionTokenHash()//
-    FixedStrikeOptionTeller -> FixedStrikeOptionTeller: If token[optionHash] does not exist\nCall internal //_deploy()//
-    activate FixedStrikeOptionTeller
+    FixedStrikeOptionTeller -> FixedStrikeOptionTeller ++ : If token[optionHash] does not exist\nCall internal //_deploy()//
     FixedStrikeOptionTeller -> FixedStrikeOptionTeller: Call //_getNameAndSymbol()//
     FixedStrikeOptionTeller -> FixedStrikeOptionToken ++ : Call //clone()// on Impl address\nto deploy new option token
     FixedStrikeOptionToken -> OptionToken **: Create instance (assembly //create()//)
     return Option Token
-    deactivate FixedStrikeOptionTeller
-
-    FixedStrikeOptionTeller -> OptionToken ++ : Call //updateDomainSeparator()//
+    FixedStrikeOptionTeller -> OptionToken --++ : Call //updateDomainSeparator()//
     OptionToken -> OptionToken -- : Update separator with value\nfrom //computeDomainSeparator()//
     return Option Token
 end
