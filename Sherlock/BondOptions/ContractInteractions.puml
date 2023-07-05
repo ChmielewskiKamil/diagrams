@@ -40,19 +40,28 @@ group Bond Options - Core Protocol Deployment
     deactivate
 
     autonumber inc A
+    Admin -> RolesAuthority : Call //setRoleCapability()//\nto allow //role0// call //teller.setProtocolFee()//
+
+    autonumber inc A
+    Admin -> RolesAuthority : Call //setRoleCapability()//\nto allow //role0// call //teller.claimFees()//
+
+    autonumber inc A 
+    Admin -> RolesAuthority : Call //setUserRole()//\nto assign //guardian// to //role0//
+
+    autonumber inc A
     Admin -> OTLMFactory ** : Deploy OTLMFactory
 end
 
 autonumber inc A
 group Manual Strike Option Token Liquidity Mining - Setup
+    Issuer -> TokenAllowList ** : Deploy new TokenAllowList contract
+    
+    autonumber inc A
+    
     Issuer -> OTLMFactory ++ : Call //deploy()// to deploy OTLM
     note left : Args: stakedToken | payoutToken | style
     OTLMFactory -> ManualStrikeOTLM ** : Deploy new ManualStrikeOTLM
     deactivate
-
-    autonumber inc A
-
-    Issuer -> TokenAllowList ** : Deploy new TokenAllowList contract
 
     autonumber inc A
     
