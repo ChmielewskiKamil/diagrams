@@ -11,14 +11,15 @@ participant "OTLM Factory" as OTLMFactory
 actor "External Team (Issuer)" as Issuer
 participant "Manual Strike OTLM" as ManualStrikeOTLM
 
-participant "Token Allow List" as TokenAllowList
+actor "Alice (User)" as Alice
+actor "Bob (User)" as Bob 
 
 participant "Fixed Strike Option Teller" as FixedStrikeOptionTeller
 participant "Fixed Strike Option Token (IMPL)" as FixedStrikeOptionToken
 
 participant "Option Token (Instance)" as OptionToken
 
-actor "Alice (User)" as User
+participant "Token Allow List" as TokenAllowList
 
 participant "Oracle Strike OTLM" as OracleStrikeOTLM
 
@@ -47,6 +48,7 @@ group Bond Options - Core Protocol Deployment
 
     autonumber inc A 
     Admin -> RolesAuthority : Call //setUserRole()//\nto assign //guardian// to //role0//
+    note left: //guardian// is Bond Labs Multi Sig wallet **???**
 
     autonumber inc A
     Admin -> OTLMFactory ** : Deploy OTLMFactory
@@ -113,6 +115,60 @@ group Manual Strike Option Token Liquidity Mining - Setup
     autonumber resume
     deactivate
     deactivate
+
+    == Contract Deployment Finished ==
+
+    autonumber inc A
+    Issuer -[#red]> ManualStrikeOTLM : Transfer //1_000_000// Payout TKN 
+end
+
+autonumber inc A
+group Staking in MOTLM
+    Alice -> ManualStrikeOTLM : Approve MOTLM for //1_000// Staked TKN
+
+    autonumber inc A
+    Alice -> ManualStrikeOTLM ++ : Call //Stake(1_000)// Staked TKN
+    note left : Only users from //AllowList// can stake
+
+    ManualStrikeOTLM -> ManualStrikeOTLM ++ : Modifier //updateRewards()//
+    alt lastRewardUpdate != current timestamp 
+        ManualStrikeOTLM -> ManualStrikeOTLM -- : Call //currentRewardsPerToken()//\nto set //rewardsPerTokenStored// 
+    end
+    note right : This also updates //lastRewardUpdate//
+    
+    ManualStrikeOTLM -> ManualStrikeOTLM ++ : Modifier //tryNewEpoch()//
+    alt current timestamp > epochStart + epochDuration
+        autonumber stop
+        ManualStrikeOTLM --> OptionToken !! : If this was hit, it means that old Option Token is expired
+        autonumber resume
+        ManualStrikeOTLM -> ManualStrikeOTLM ++ : Call //_startNewEpoch()//
+        ManualStrikeOTLM -> FixedStrikeOptionTeller ++ : Call //deploy()// new Option Token
+        create OptionToken
+        FixedStrikeOptionTeller -> OptionToken -- : Create new instance of Option Token\nProcess exactly the same as in **9.6**
+        ManualStrikeOTLM -> FixedStrikeOptionTeller : Approve Option Teller with //epochTransitionReward// of Payout TKN
+        ManualStrikeOTLM -> FixedStrikeOptionTeller ++ : Call //create(_optionToken, _amount)//\nIn this case //_amount// is //epochTrReward//
+        FixedStrikeOptionTeller -> OptionToken ++ : Call //getOptionParameters(_optionToken)//\nto get basic info about Option Token
+        autonumber stop
+        return optionParameters
+        autonumber resume
+        FixedStrikeOptionTeller -> FixedStrikeOptionTeller ++ : Call //getOptionToken(optionParameters)//
+        FixedStrikeOptionTeller -> FixedStrikeOptionTeller ++ : Call //_getOptionTokenHash(optionParameters)//
+        autonumber stop
+        return Hash of the optionParameters
+        return optionToken (it's the //optionTokens[optionHash]//)
+        autonumber resume
+
+        alt Option is Call: //bool call// (option param) //== true//
+            ManualStrikeOTLM -[#red]> FixedStrikeOptionTeller : Safe Transfer //_amount// of Payout TKN
+        else Option is Put: //call == false//
+            ManualStrikeOTLM -[#green]> FixedStrikeOptionTeller : Safe Transfer //_quoteAmount// of Quote TKN
+        end
+
+        FixedStrikeOptionTeller -> OptionToken ++ : Call //mint(msg.sender, _amount)//
+        OptionToken -[#purple]> ManualStrikeOTLM -- : Internal //_mint// updates Option TKN\nbalance and total supply
+
+        ManualStrikeOTLM -[#purple]> Alice : Transfer //epochTransitionReward// of Option TKN
+    end
 end
 
 /' //////////////////////////////////////////////////////////////////
@@ -121,11 +177,11 @@ end
 
 legend
     == Legend ==
-    <font color=orange>Orange</font> - 
-    <font color=purple>Purple</font> - 
-    <font color=blue>Blue</font> - 
-    <font color=red>Red</font> - 
-    <font color=green>Green</font> - 
+    ' <font color=orange>Orange</font> - 
+    <font color=purple>Purple</font> - Option Token flow
+    <font color=blue>Green</font> - Quote Token flow
+    <font color=red>Red</font> - Payout Token flow
+    <font color=green>Blue</font> - Staked Token flow
 endlegend
 
 /' //////////////////////////////////////////////////////////////////
@@ -133,11 +189,13 @@ endlegend
 ////////////////////////////////////////////////////////////////// '/
 
 skinparam sequenceMessageAlign center
+
 skinparam note {
     BorderColor black
     BackgroundColor white
     FontColor black
 }
+
 skinparam participant {
     FontSize 25
     BackgroundColor lightgray
