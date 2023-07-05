@@ -145,6 +145,8 @@ group Staking in MOTLM
         ManualStrikeOTLM -> FixedStrikeOptionTeller ++ : Call //deploy()// new Option Token
         create OptionToken
         FixedStrikeOptionTeller -> OptionToken -- : Create new instance of Option Token\nProcess exactly the same as in **9.6**
+        deactivate
+
         ManualStrikeOTLM -> FixedStrikeOptionTeller : Approve Option Teller with //epochTransitionReward// of Payout TKN
         ManualStrikeOTLM -> FixedStrikeOptionTeller ++ : Call //create(_optionToken, _amount)//\nIn this case //_amount// is //epochTrReward//
         FixedStrikeOptionTeller -> OptionToken ++ : Call //getOptionParameters(_optionToken)//\nto get basic info about Option Token
@@ -166,8 +168,9 @@ group Staking in MOTLM
 
         FixedStrikeOptionTeller -> OptionToken ++ : Call //mint(msg.sender, _amount)//
         OptionToken -[#purple]> ManualStrikeOTLM -- : Internal //_mint// updates Option TKN\nbalance and total supply
+        deactivate
 
-        ManualStrikeOTLM -[#purple]> Alice : Transfer //epochTransitionReward// of Option TKN
+        ManualStrikeOTLM -[#purple]> Alice -- : Transfer //epochTransitionReward// of Option TKN
     end
 end
 
