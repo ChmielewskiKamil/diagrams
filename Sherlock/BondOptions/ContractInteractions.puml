@@ -27,9 +27,9 @@ participant "Oracle Strike OTLM" as OracleStrikeOTLM
 ////////////////////////////////////////////////////////////////// '/
 'Numbers are in the A.B.C format, by calling `inc A` you will increase the first number by 1'
 autonumber 1.1
-group Bond Options - Protocol Deployment
-    Admin -> FixedStrikeOptionTeller ** : Deploy FixedStrikeOptionTeller
-    FixedStrikeOptionTeller -> FixedStrikeOptionTeller: Set //guardian// and //authority//
+group Bond Options - Core Protocol Deployment
+    Admin -> FixedStrikeOptionTeller ** : Deploy new FixedStrikeOptionTeller
+    FixedStrikeOptionTeller -> FixedStrikeOptionTeller : Set //guardian// and //authority//
     FixedStrikeOptionTeller -> FixedStrikeOptionToken ** : Deploy Option Token implementation for clones
     |||
     autonumber inc A
@@ -37,13 +37,20 @@ group Bond Options - Protocol Deployment
 end
 
 autonumber inc A
-group Manual Strike - Option Token Liquidity Mining
-    note over Issuer, OTLMFactory: Args: stakedToken | payoutToken | style
-    Issuer -> OTLMFactory: Call //deploy()// to deploy OTLM
-    OTLMFactory -> ManualStrikeOTLM ** : Deploy ManualStrikeOTLM
+group Manual Strike Option Token Liquidity Mining - Setup
+    Issuer -> OTLMFactory ++ : Call //deploy()// to deploy OTLM
+    note left : Args: stakedToken | payoutToken | style
+    OTLMFactory -> ManualStrikeOTLM ** : Deploy new ManualStrikeOTLM
+    deactivate
 
     autonumber inc A
-    note over Issuer, ManualStrikeOTLM 
+
+    Issuer -> TokenAllowList ** : Deploy new TokenAllowList contract
+
+    autonumber inc A
+    
+    Issuer -> ManualStrikeOTLM ++ : call //initialize()//
+    note left
         Args: ERC20 quoteToken |
         uint48 timeUntilEligible |
         uint48 eligibleDuration |
@@ -54,24 +61,25 @@ group Manual Strike - Option Token Liquidity Mining
         bytes calldata allowlistParams |
         bytes calldata other
     end note
-    Issuer -> ManualStrikeOTLM: call //initialize()//
-    
-    note over ManualStrikeOTLM, TokenAllowList: Args: allowlistParams
-    ManualStrikeOTLM -> TokenAllowList: If //allowList != address(0)//\ntry calling //register()//
 
-    note over ManualStrikeOTLM: Args: other
+    ManualStrikeOTLM -> TokenAllowList : If //allowList != address(0)//\ntry calling //register()//
+    note left : Args: allowlistParams
+
     ManualStrikeOTLM -> ManualStrikeOTLM: Call //_initialize()// to set initial strike price
+    note left : Args: other
 
-    ManualStrikeOTLM -> ManualStrikeOTLM: Call //_startNewEpoch()//
+    ManualStrikeOTLM -> ManualStrikeOTLM ++ : Call //_startNewEpoch()//\nto start the first epoch
 
-    note over ManualStrikeOTLM, FixedStrikeOptionTeller
+    ManualStrikeOTLM -> ManualStrikeOTLM : Call //nextStrikPrice()// it will be\npassed as strike price to //deploy()//
+
+    ManualStrikeOTLM -> FixedStrikeOptionTeller ++ : //deploy()// new Option Token
+    note left
         Args: payoutToken | quoteToken |
         uint48(block.timestamp) + timeUntilEligible |
         uint48(block.timestamp) + timeUntilEligible + eligibleDuration |
         receiver | true | nextStrikePrice()
     end note
 
-    ManualStrikeOTLM -> FixedStrikeOptionTeller ++ : //deploy()// new Option Token
     FixedStrikeOptionTeller -> FixedStrikeOptionTeller ++ : //_getPriceDecimals()//
     FixedStrikeOptionTeller -> FixedStrikeOptionTeller -- : External call to //quoteToken.decimals()//
     FixedStrikeOptionTeller -> FixedStrikeOptionTeller: Create option token HASH if one does not exist yet\nInternal Call//_getOptionTokenHash()//
@@ -79,10 +87,16 @@ group Manual Strike - Option Token Liquidity Mining
     FixedStrikeOptionTeller -> FixedStrikeOptionTeller: Call //_getNameAndSymbol()//
     FixedStrikeOptionTeller -> FixedStrikeOptionToken ++ : Call //clone()// on Impl address\nto deploy new option token
     FixedStrikeOptionToken -> OptionToken **: Create instance (assembly //create()//)
+    autonumber stop
     return Option Token
+    autonumber resume
     FixedStrikeOptionTeller -> OptionToken --++ : Call //updateDomainSeparator()//
     OptionToken -> OptionToken -- : Update separator with value\nfrom //computeDomainSeparator()//
-    return Option Token
+    autonumber stop
+    return OptionToken
+    autonumber resume
+    deactivate
+    deactivate
 end
 
 /' //////////////////////////////////////////////////////////////////
