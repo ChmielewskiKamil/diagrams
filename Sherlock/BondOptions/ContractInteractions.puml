@@ -5,6 +5,7 @@ title Bond Options: Contract Interactions in the protocol
 //                      System Participants                        //
 ////////////////////////////////////////////////////////////////// '/
 
+participant "Roles Authority" as RolesAuthority
 actor "Bond Labs (Admin)" as Admin
 participant "OTLM Factory" as OTLMFactory
 actor "External Team (Issuer)" as Issuer
@@ -28,10 +29,16 @@ participant "Oracle Strike OTLM" as OracleStrikeOTLM
 'Numbers are in the A.B.C format, by calling `inc A` you will increase the first number by 1'
 autonumber 1.1
 group Bond Options - Core Protocol Deployment
-    Admin -> FixedStrikeOptionTeller ** : Deploy new FixedStrikeOptionTeller
-    FixedStrikeOptionTeller -> FixedStrikeOptionTeller : Set //guardian// and //authority//
-    FixedStrikeOptionTeller -> FixedStrikeOptionToken ** : Deploy Option Token implementation for clones
-    |||
+    Admin -> RolesAuthority ** : Deploy new Roles Authority contract
+
+    autonumber inc A
+    create FixedStrikeOptionTeller
+    Admin -> FixedStrikeOptionTeller ++ : Deploy new FixedStrikeOptionTeller
+    FixedStrikeOptionTeller -> RolesAuthority : Set //guardian// and //authority//
+    create FixedStrikeOptionToken
+    FixedStrikeOptionTeller -> FixedStrikeOptionToken : Deploy Option Token implementation for clones
+    deactivate
+
     autonumber inc A
     Admin -> OTLMFactory ** : Deploy OTLMFactory
 end
