@@ -8,12 +8,19 @@ title Bond Options: Token flows in the protocol
 actor "Bond Labs (Admin)" as Admin
 participant "OTLM Factory" as OTLMFactory
 actor "External Team (Issuer)" as Issuer
-participant "Fixed Strike Option Teller" as FixedStrikeOptionTeller
-participant "Oracle Strike OTLM" as OracleStrikeOTLM
 participant "Manual Strike OTLM" as ManualStrikeOTLM
-participant "Fixed Strike Option Token" as FixedStrikeOptionToken
+
+participant "Token Allow List" as TokenAllowList
+
+participant "Fixed Strike Option Teller" as FixedStrikeOptionTeller
+participant "Fixed Strike Option Token (IMPL)" as FixedStrikeOptionToken
+
+participant "Option Token (Instance)" as OptionToken
 
 actor "Alice (User)" as User
+
+participant "Oracle Strike OTLM" as OracleStrikeOTLM
+
 
 /' //////////////////////////////////////////////////////////////////
 //                         Interactions                            //
@@ -21,23 +28,66 @@ actor "Alice (User)" as User
 'Numbers are in the A.B.C format, by calling `inc A` you will increase the first number by 1'
 autonumber 1.1
 group Bond Options - Protocol Deployment
-    Admin -> FixedStrikeOptionTeller: Deploy FixedStrikeOptionTeller
+    Admin -> FixedStrikeOptionTeller ** : Deploy FixedStrikeOptionTeller
     FixedStrikeOptionTeller -> FixedStrikeOptionTeller: Set //guardian// and //authority//
-    FixedStrikeOptionTeller -> FixedStrikeOptionToken: Deploy Option Token implementation for clones
+    FixedStrikeOptionTeller -> FixedStrikeOptionToken ** : Deploy Option Token implementation for clones
     |||
     autonumber inc A
-    Admin -> OTLMFactory: Deploy OTLMFactory
+    Admin -> OTLMFactory ** : Deploy OTLMFactory
 end
 
 autonumber inc A
-group Option Token Liquidity Mining
-    note over Issuer, OTLMFactory: Args: stakedToken, payoutToken, style
-    Issuer -> OTLMFactory: Call //_deploy// to deploy OTLM
-    alt #whitesmoke Oracle Strike
-        OTLMFactory -> OracleStrikeOTLM: Deploy OracleStrikeOTLM
-    else Manual Strike
-        OTLMFactory -> ManualStrikeOTLM: Deploy ManualStrikeOTLM
-    end
+group Manual Strike - Option Token Liquidity Mining
+    note over Issuer, OTLMFactory: Args: stakedToken | payoutToken | style
+    Issuer -> OTLMFactory: Call //deploy()// to deploy OTLM
+    OTLMFactory -> ManualStrikeOTLM ** : Deploy ManualStrikeOTLM
+
+    autonumber inc A
+    note over Issuer, ManualStrikeOTLM 
+        Args: ERC20 quoteToken |
+        uint48 timeUntilEligible |
+        uint48 eligibleDuration |
+        address receiver | uint48 epochDuration |
+        uint256 epochTransitionReward |
+        uint256 rewardRate |
+        IAllowlist allowlist |
+        bytes calldata allowlistParams |
+        bytes calldata other
+    end note
+    Issuer -> ManualStrikeOTLM: call //initialize()//
+    
+    note over ManualStrikeOTLM, TokenAllowList: Args: allowlistParams
+    ManualStrikeOTLM -> TokenAllowList: If //allowList != address(0)//\ntry calling //register()//
+
+    note over ManualStrikeOTLM: Args: other
+    ManualStrikeOTLM -> ManualStrikeOTLM: Call //_initialize()// to set initial strike price
+
+    ManualStrikeOTLM -> ManualStrikeOTLM: Call //_startNewEpoch()//
+
+    note over ManualStrikeOTLM, FixedStrikeOptionTeller
+        Args: payoutToken | quoteToken |
+        uint48(block.timestamp) + timeUntilEligible |
+        uint48(block.timestamp) + timeUntilEligible + eligibleDuration |
+        receiver | true | nextStrikePrice()
+    end note
+
+    ManualStrikeOTLM -> FixedStrikeOptionTeller ++ : //deploy()// new Option Token
+    FixedStrikeOptionTeller -> FixedStrikeOptionTeller: //_getPriceDecimals()//
+    activate FixedStrikeOptionTeller
+    FixedStrikeOptionTeller -> FixedStrikeOptionTeller: External call to //quoteToken.decimals()//
+    deactivate FixedStrikeOptionTeller
+    FixedStrikeOptionTeller -> FixedStrikeOptionTeller: Create option token HASH if one does not exist yet\nInternal Call//_getOptionTokenHash()//
+    FixedStrikeOptionTeller -> FixedStrikeOptionTeller: If token[optionHash] does not exist\nCall internal //_deploy()//
+    activate FixedStrikeOptionTeller
+    FixedStrikeOptionTeller -> FixedStrikeOptionTeller: Call //_getNameAndSymbol()//
+    FixedStrikeOptionTeller -> FixedStrikeOptionToken ++ : Call //clone()// on Impl address\nto deploy new option token
+    FixedStrikeOptionToken -> OptionToken **: Create instance (assembly //create()//)
+    return Option Token
+    deactivate FixedStrikeOptionTeller
+
+    FixedStrikeOptionTeller -> OptionToken ++ : Call //updateDomainSeparator()//
+    OptionToken -> OptionToken -- : Update separator with value\nfrom //computeDomainSeparator()//
+    return Option Token
 end
 
 /' //////////////////////////////////////////////////////////////////
