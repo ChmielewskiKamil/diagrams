@@ -1,5 +1,5 @@
 @startuml
-title Bond Options: Token flows in the protocol
+title Bond Options: Contract Interactions in the protocol
 
 /' //////////////////////////////////////////////////////////////////
 //                      System Participants                        //
