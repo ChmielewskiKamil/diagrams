@@ -185,21 +185,17 @@ group Staking in MOTLM
             ManualStrikeOTLM -> FixedStrikeOptionTeller : Approve Teller for //rewards// amount of Payout TKN
             ManualStrikeOTLM -[#red]> FixedStrikeOptionTeller ++ : Call //create(rewards)//\nprocess is the same as in **12.9**
             autonumber stop
-            FixedStrikeOptionTeller -[#purple]> ManualStrikeOTLM : Mint //rewards// amount of option TKN 
+            FixedStrikeOptionTeller -[#purple]> ManualStrikeOTLM -- : Mint //rewards// amount of option TKN 
             autonumber resume
             ManualStrikeOTLM -[#purple]> Alice : Safe Transfer //rewards// amount of Option TKN
 
             autonumber stop
-            FixedStrikeOptionTeller --> ManualStrikeOTLM : rewards claimed\nThis will return from the whole //_claimRewards()//
-            autonumber resume
-        else User has unclaimed rewards. Loop over epochs starting at last claimed
-            ManualStrikeOTLM -> ManualStrikeOTLM ++ : Call //_claimEpochRewards(i)// to claim\nfor all epochs since last claim\nProcess the same as above
-            autonumber stop
-            return totalRewardsClaimed += rewardsClaimed
+            return rewards claimed
             autonumber resume
         end 
         autonumber stop
         return totalRewardsClaimed
+        note right : If lastClaimedEpoch != current epoch,\nthe **12.19** will be executed in a loop
         autonumber resume
     end
     Alice -[#green]> ManualStrikeOTLM : Safe Transfer //_amount// of Staked TKN
