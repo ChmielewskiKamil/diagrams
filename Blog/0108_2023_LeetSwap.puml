@@ -1,0 +1,76 @@
+@startuml
+title Leet Swap Exploit
+
+/' //////////////////////////////////////////////////////////////////
+//                      System Participants                        //
+////////////////////////////////////////////////////////////////// '/
+
+actor "Attacker" as Attacker
+participant "WETH" as WETH
+participant "Attack Contract" as AttackContract
+participant "Leet Swap V2 Router" as LeetSwapV2Router 
+participant "Leet Swap axlUSDC / WETH pair" as AxlUsdcWethPair
+participant "Leet Swap V2 Fees Contract" as LeetSwapV2Fees
+participant "Protocol Fee Recipient" as ProtocolFeeRecipient
+
+/' //////////////////////////////////////////////////////////////////
+//                         Interactions                            //
+////////////////////////////////////////////////////////////////// '/
+
+'Numbers are in the A.B.C format, by calling `inc A` you will increase the first number by 1'
+autonumber 1.1.1
+Attacker -> AttackContract ** : Deploy the contract at block //2031731//
+
+autonumber inc A
+Attacker -[#green]> AttackContract : Fund the contract with //0.001// ETH (1e15)
+
+autonumber inc A
+Attacker -> AttackContract ++ : Call method //e2d6a23b// at block //2031747//
+
+autonumber inc B
+AttackContract -[#green]> WETH ++ : Deposit 0.001 ETH (1e15)
+WETH -[#blue]> AttackContract -- : Mint 0.001 WETH (1e15)
+
+autonumber inc B
+AttackContract -> WETH : Approve //LeetSwapRouterV2// for max uint256
+
+autonumber inc B
+AttackContract -> LeetSwapV2Router ++ : Call method\n//swapExactTokensForTokensSupportingFeeOnTransferTokens//
+AttackContract -[#blue]> AxlUsdcWethPair : Transfer 0.001 WETH (1e15)
+LeetSwapV2Router -> AxlUsdcWethPair ++ : //swap()// WETH for axlUSDC
+AxlUsdcWethPair -[#red]> AttackContract : Transfer 1.796 axlUSDC (1.796e6)
+AxlUsdcWethPair -[#blue]> LeetSwapV2Fees : Transfer 0.0000015 WETH fee (1.5e12)
+AxlUsdcWethPair -[#blue]> ProtocolFeeRecipient -- : Transfer 0.0000015 WETH fee (1.5e12)
+deactivate
+
+autonumber inc B
+AttackContract -> AxlUsdcWethPair ++ : Call //_transferFeesSupportingTaxTokens//
+
+/' //////////////////////////////////////////////////////////////////
+//                            Legend                               //
+////////////////////////////////////////////////////////////////// '/
+
+legend
+    == Legend ==
+    <font color=blue>Blue</font> - WETH tokens flow
+    <font color=red>Red</font> - axl USDC tokens flow
+    <font color=green>Green</font> - Native ETH flow
+endlegend
+
+/' //////////////////////////////////////////////////////////////////
+//                            Styling                              //
+////////////////////////////////////////////////////////////////// '/
+
+skinparam sequenceMessageAlign center
+skinparam note {
+    BorderColor black
+    BackgroundColor white
+    FontColor black
+}
+skinparam participant {
+    FontSize 25
+    BackgroundColor lightgray
+}
+
+footer Leet Swap - Exploit Sequence | author: @kamilchmielu
+@enduml
