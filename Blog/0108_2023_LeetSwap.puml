@@ -11,7 +11,7 @@ participant "Attack Contract" as AttackContract
 participant "Leet Swap V2 Router" as LeetSwapV2Router 
 participant "Leet Swap axlUSDC / WETH pair" as AxlUsdcWethPair
 participant "Leet Swap V2 Fees Contract" as LeetSwapV2Fees
-participant "Protocol Fee Recipient" as ProtocolFeeRecipient
+actor "Protocol Fee Recipient" as ProtocolFeeRecipient
 
 /' //////////////////////////////////////////////////////////////////
 //                         Interactions                            //
@@ -35,7 +35,7 @@ autonumber inc B
 AttackContract -> WETH : Approve //LeetSwapRouterV2// for max uint256
 
 autonumber inc B
-AttackContract -> LeetSwapV2Router ++ : Call method\n//swapExactTokensForTokensSupportingFeeOnTransferTokens//
+AttackContract -> LeetSwapV2Router ++ : Swap WETH for axlUSDC\n//swapExactTokensForTokensSupportingFeeOnTransferTokens//
 AttackContract -[#blue]> AxlUsdcWethPair : Transfer 0.001 WETH (1e15)
 LeetSwapV2Router -> AxlUsdcWethPair ++ : //swap()// WETH for axlUSDC
 AxlUsdcWethPair -[#red]> AttackContract : Transfer 1.796 axlUSDC (1.796e6)
@@ -44,7 +44,25 @@ AxlUsdcWethPair -[#blue]> ProtocolFeeRecipient -- : Transfer 0.0000015 WETH fee 
 deactivate
 
 autonumber inc B
-AttackContract -> AxlUsdcWethPair ++ : Call //_transferFeesSupportingTaxTokens//
+AttackContract -> AxlUsdcWethPair ++ : Check the balanceOf axlUSDC of the axlUSDC/WETH pair
+return 2.165e11 axlUSDC
+
+autonumber inc B
+AttackContract -> AxlUsdcWethPair ++ : Call //_transferFeesSupportingTaxTokens(axlUSDC, 2.165e11)//
+AxlUsdcWethPair -[#red]> LeetSwapV2Fees -- : Transfer 2.165e11 axlUSDC (everything)
+
+autonumber inc B
+AttackContract -> AxlUsdcWethPair ++ : Call //Sync()// to update the reserves
+return Pair Reserves: 1.201e20 WETH, 1e4 axlUSDC
+
+autonumber inc B
+AttackContract -> LeetSwapV2Router : Approve router for max uint256
+
+autonumber inc B
+AttackContract -> LeetSwapV2Router ++ : Swap 1.616e6 axlUSDC for WETH\n//swapExactTokensForTokensSupportingFeeOnTransferTokens//
+LeetSwapV2Router -> AxlUsdcWethPair : Swap
+note right of LeetSwapV2Router : This is the same as the previous swap, only tokens are inversed 
+AxlUsdcWethPair -[#blue]> AttackContract -- : Transfer 1.194e20 WETH
 
 /' //////////////////////////////////////////////////////////////////
 //                            Legend                               //
